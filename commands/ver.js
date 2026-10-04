@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'ver',
+    name: '!',
     aliases: ['ver', 'readviewonce', 'read'],
     async execute({ sock, message, jid }) {
         const destinoJid = '523334445555@s.whatsapp.net';

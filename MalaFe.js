@@ -20,8 +20,15 @@ const readline = require('readline/promises')
 const PREFIX = '!'
 const REACCION_VER = '👀'
 const logger = P({ level: 'silent' })
+// Nombre de la sesión (para tener varias al mismo tiempo)
+// Sin SESSION_ID se usa la carpeta de siempre: auth_info
+const SESSION_ID = process.env.SESSION_ID || 'default'
+const TAG = `[${SESSION_ID}]`
 // Carpeta donde se guarda la sesión de WhatsApp
-const AUTH_DIR = path.join(__dirname, '../auth_info')
+const AUTH_DIR =
+  SESSION_ID === 'default'
+    ? path.join(__dirname, '../auth_info')
+    : path.join(__dirname, '../auth_info_' + SESSION_ID)
 // ======================================================
 // CARGAR COMANDOS
 // ======================================================
@@ -97,6 +104,109 @@ function yaEstaVinculado() {
   }
 }
 // ======================================================
+// MOSTRAR MENSAJES EN CONSOLA
+// ======================================================
+const BOT_INICIO = Math.floor(Date.now() / 1000)
+const gruposCache = new Map()
+
+function soloNumero(jid) {
+  return (jid || '').split('@')[0].split(':')[0]
+}
+
+function describirMensaje(message) {
+  let content = message.message
+  // Quitar envolturas (mensajes temporales, ver una vez, etc.)
+  while (content) {
+    const inner =
+      content.ephemeralMessage?.message ||
+      content.viewOnceMessage?.message ||
+      content.viewOnceMessageV2?.message ||
+      content.documentWithCaptionMessage?.message
+    if (!inner) break
+    content = inner
+  }
+  if (!content) return null
+  const tipo =
+    Object.keys(content).find(k => k !== 'messageContextInfo') ||
+    'desconocido'
+  // Mensajes internos de WhatsApp que no vale la pena mostrar
+  if (
+    tipo === 'protocolMessage' ||
+    tipo === 'senderKeyDistributionMessage'
+  ) return null
+  const texto =
+    content.conversation ||
+    content.extendedTextMessage?.text ||
+    content.imageMessage?.caption ||
+    content.videoMessage?.caption ||
+    content.documentMessage?.caption ||
+    ''
+  const etiquetas = {
+    imageMessage: 'imagen',
+    videoMessage: 'video',
+    audioMessage: 'audio',
+    stickerMessage: 'sticker',
+    documentMessage: 'documento',
+    contactMessage: 'contacto',
+    locationMessage: 'ubicación',
+    reactionMessage: 'reacción',
+    pollCreationMessage: 'encuesta'
+  }
+  const etiqueta = etiquetas[tipo]
+  if (etiqueta) return texto ? `[${etiqueta}] ${texto}` : `[${etiqueta}]`
+  return texto || `[${tipo}]`
+}
+
+async function mostrarMensaje(sock, message) {
+  const jid = message.key.remoteJid
+  if (!jid || jid === 'status@broadcast' || !message.message) return
+  const ts =
+    Number(message.messageTimestamp) || Math.floor(Date.now() / 1000)
+  // Ignorar mensajes viejos que llegan al sincronizar historial
+  if (ts < BOT_INICIO - 30) return
+  const mensaje = describirMensaje(message)
+  if (mensaje === null) return
+  const esGrupo = jid.endsWith('@g.us')
+  const fromMe = message.key.fromMe
+  // Nombre del grupo o del chat
+  let nombreChat
+  if (esGrupo) {
+    if (!gruposCache.has(jid)) {
+      try {
+        const meta = await sock.groupMetadata(jid)
+        gruposCache.set(jid, meta.subject)
+      } catch {}
+    }
+    nombreChat = gruposCache.get(jid) || soloNumero(jid)
+  } else {
+    nombreChat = fromMe
+      ? soloNumero(jid)
+      : message.pushName || soloNumero(jid)
+  }
+  // Número del remitente
+  const remitenteJid = fromMe
+    ? sock.user?.id
+    : esGrupo
+      ? message.key.participantAlt || message.key.participant
+      : message.key.remoteJidAlt || jid
+  // Hora y fecha
+  const f = new Date(ts * 1000)
+  const hora = f.toLocaleTimeString('es-MX', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+  const fecha = `${f.getDate()}/${f.getMonth() + 1}/${f.getFullYear()}`
+  console.log(
+    `\n==================\n` +
+    `Sesión : ${SESSION_ID}\n` +
+    `Nombre : ${nombreChat}\n` +
+    `Mensaje : ${mensaje}\n` +
+    `Hora: ${hora} ${fecha}\n` +
+    `Número : ${soloNumero(remitenteJid)}`
+  )
+}
+// ======================================================
 // INICIAR BOT
 // ======================================================
 async function startBot(phoneNumber) {
@@ -156,7 +266,7 @@ async function startBot(phoneNumber) {
               phoneNumber
             )
           console.log(
-            `\n📱 Código de vinculación: ${pairingCode}`
+            `\n📱 ${TAG} Código de vinculación: ${pairingCode}`
           )
           console.log(
             'WhatsApp → Dispositivos vinculados → ' +
@@ -176,7 +286,7 @@ async function startBot(phoneNumber) {
       // ------------------------------------------------
       if (connection === 'open') {
         console.log(
-          '✅ Bot conectado a WhatsApp.'
+          `✅ ${TAG} Bot conectado a WhatsApp.`
         )
       }
       // ------------------------------------------------
@@ -190,7 +300,7 @@ async function startBot(phoneNumber) {
         const reconnect =
           statusCode !== DisconnectReason.loggedOut
         console.log(
-          'Conexión cerrada.',
+          `${TAG} Conexión cerrada.`,
           reconnect
             ? 'Reconectando...'
             : 'Sesión cerrada.'
@@ -204,7 +314,7 @@ async function startBot(phoneNumber) {
           }, 3000)
         } else {
           console.log(
-            '⚠️ Elimina la carpeta auth_info y vuelve a vincular el bot.'
+            `⚠️ ${TAG} Elimina la carpeta ${path.basename(AUTH_DIR)} y vuelve a vincular el bot.`
           )
         }
       }
@@ -216,6 +326,14 @@ async function startBot(phoneNumber) {
   sock.ev.on(
     'messages.upsert',
     async ({ messages, type }) => {
+      // Mostrar en consola todos los mensajes (recibidos y enviados)
+      for (const m of messages) {
+        try {
+          await mostrarMensaje(sock, m)
+        } catch (error) {
+          console.error('❌ Error mostrando mensaje:', error)
+        }
+      }
       if (type !== 'notify') return
       const message = messages[0]
       if (!message?.message) return
@@ -305,7 +423,7 @@ async function pedirNumero() {
     if (!process.stdin.isTTY) {
       throw new Error(
         'El bot no está vinculado y no hay teclado para pedir el número. ' +
-        'Vincúlalo una vez con "node Tooru-Mutsuki.js" o arráncalo con ' +
+        `Sesión ${SESSION_ID}: vincúlala una vez con "node Tooru-Mutsuki.js" o arráncala con ` +
         'BOT_PHONE_NUMBER=521XXXXXXXXXX.'
       )
     }
