@@ -1,0 +1,6 @@
+npm init -y 
+npm install @whiskeysockets/baileys pino @hapi/boom
+
+SESSION_ID=bot1 node MalaFe.js
+
+SESSION_ID=bot1 pm2 start MalaFe.js --name XXXX

