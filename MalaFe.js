@@ -17,10 +17,11 @@ const P = require('pino')
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline/promises')
-const configurarAvisoInicial = require('./startup-notify')
 const PREFIX = '!'
 const REACCION_VER = '👀'
 const logger = P({ level: 'silent' })
+// Carpeta donde se guarda la sesión de WhatsApp
+const AUTH_DIR = path.join(__dirname, '../auth_info')
 // ======================================================
 // CARGAR COMANDOS
 // ======================================================
@@ -83,6 +84,19 @@ function getMessageText(message) {
   )
 }
 // ======================================================
+// ¿YA ESTÁ VINCULADO?
+// ======================================================
+function yaEstaVinculado() {
+  const credsPath = path.join(AUTH_DIR, 'creds.json')
+  if (!fs.existsSync(credsPath)) return false
+  try {
+    const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'))
+    return creds.registered === true
+  } catch {
+    return false
+  }
+}
+// ======================================================
 // INICIAR BOT
 // ======================================================
 async function startBot(phoneNumber) {
@@ -93,9 +107,7 @@ async function startBot(phoneNumber) {
     makeCacheableSignalKeyStore
   } = await import('@whiskeysockets/baileys')
   const { state, saveCreds } =
-    await useMultiFileAuthState(
-      path.join(__dirname, '../auth_info')
-    )
+    await useMultiFileAuthState(AUTH_DIR)
   const sock = makeWASocket({
     auth: {
       creds: state.creds,
@@ -108,8 +120,6 @@ async function startBot(phoneNumber) {
     markOnlineOnConnect: false,
     syncFullHistory: false
   })
-  // Aviso enviado una sola vez, al primer inicio conectado.
-  configurarAvisoInicial(sock)
   // Guardar credenciales
   sock.ev.on('creds.update', saveCreds)
   // Evitar pedir el pairing code varias veces
@@ -129,7 +139,8 @@ async function startBot(phoneNumber) {
       if (
         connection === 'connecting' &&
         !state.creds.registered &&
-        !pairingRequested
+        !pairingRequested &&
+        phoneNumber
       ) {
         pairingRequested = true
         try {
@@ -225,6 +236,8 @@ async function startBot(phoneNumber) {
       // =================================================
       const text =
         getMessageText(message).trim()
+      // Si el mensaje no empieza con el prefijo, no es comando
+      if (!text.startsWith(PREFIX)) return
       // =================================================
       // COMANDO
       // =================================================
@@ -280,12 +293,22 @@ async function startBot(phoneNumber) {
 
 }
 // ======================================================
-// PEDIR NÚMERO
+// PEDIR NÚMERO (solo si todavía no está vinculado)
 // ======================================================
 async function pedirNumero() {
+  // Si ya hay sesión guardada, no hace falta número
+  if (yaEstaVinculado()) return null
   let phoneNumber =
     process.env.BOT_PHONE_NUMBER
   if (!phoneNumber) {
+    // Sin teclado (por ejemplo en pm2) no se puede preguntar
+    if (!process.stdin.isTTY) {
+      throw new Error(
+        'El bot no está vinculado y no hay teclado para pedir el número. ' +
+        'Vincúlalo una vez con "node Tooru-Mutsuki.js" o arráncalo con ' +
+        'BOT_PHONE_NUMBER=521XXXXXXXXXX.'
+      )
+    }
     const rl =
       readline.createInterface({
         input: process.stdin,

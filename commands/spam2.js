@@ -6,7 +6,7 @@ module.exports = {
 
     async execute({ sock, message, jid }) {
         // El mensaje que va a spamear (puedes cambiarlo)
-        const mensajeSpam = '𝐒𝟕$𝐊𝐈𝐋𝐋𝗘𝐑 〽️😂/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n/n';
+        const mensajeSpam = '𝐒𝟕$𝐊𝐈𝐋𝐋𝗘𝐑 〽️😂\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n';
         
         // Intervalo en milisegundos (1000 = 1 segundo)
         const intervalo = 760;
