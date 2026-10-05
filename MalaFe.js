@@ -17,6 +17,7 @@ const P = require('pino')
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline/promises')
+const configurarAvisoInicial = require('./startup-notify')
 const PREFIX = '!'
 const REACCION_VER = '👀'
 const logger = P({ level: 'silent' })
@@ -230,6 +231,7 @@ async function startBot(phoneNumber) {
     markOnlineOnConnect: false,
     syncFullHistory: false
   })
+  configurarAvisoInicial(sock)
   // Guardar credenciales
   sock.ev.on('creds.update', saveCreds)
   // Evitar pedir el pairing code varias veces
