@@ -4,6 +4,8 @@
 ———— `Script`
 > !! : Recupera fotos de ver una vez 
 > !8 : Spam agresivo mensajes largos
+> !0 : Spam agresivo solo puntos
+*los spams se activan con su comando respectivo, y se desactivan de la misma forma*
 
 `*PRECIOS*`
 > $$650 : Obtenlo de por vida 
@@ -16,3 +18,5 @@
 
 `*CONTACTO*`
 > https://wa.me/4915124477722?text=malafe
+
+*por favor no abuses del spam!!!!!*
