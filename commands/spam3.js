@@ -1,7 +1,7 @@
 let spamActivo = {};
 
 module.exports = {
-    name: '8',
+    name: '0',
     aliases: ['spam'],
 
     async execute({ sock, message, jid }) {
