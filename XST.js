@@ -1,17 +1,5 @@
-// Si el Node instalado es muy viejo, avisar claro
-const nodeVersion = process.versions.node
-const [nodeMajor, nodeMinor] = nodeVersion.split('.').map(Number)
-if (nodeMajor < 20 || (nodeMajor === 20 && nodeMinor < 9)) {
-  console.error(
-    `\n❌ Este bot necesita Node.js 20.9.0 o más nuevo (lo piden baileys y sharp).`
-  )
-  console.error(`   Tienes instalada la v${nodeVersion}.`)
-  console.error(
-    `   Descarga una versión más nueva en https://nodejs.org y vuelve a intentar.\n`
-  )
-  process.exit(1)
-}
-// bot tooru-mutsuki
+
+// bot X S T
 const { Boom } = require('@hapi/boom')
 const P = require('pino')
 const fs = require('fs')
@@ -425,7 +413,7 @@ async function pedirNumero() {
     if (!process.stdin.isTTY) {
       throw new Error(
         'El bot no está vinculado y no hay teclado para pedir el número. ' +
-        `Sesión ${SESSION_ID}: vincúlala una vez con "node Tooru-Mutsuki.js" o arráncala con ` +
+        `Sesión ${SESSION_ID}: vincúlala una vez ejecutando este archivo con Node.js o arráncala con ` +
         'BOT_PHONE_NUMBER=521XXXXXXXXXX.'
       )
     }
