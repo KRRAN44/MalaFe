@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 let spamActivo = {};
 
 module.exports = {
@@ -6,8 +8,8 @@ module.exports = {
 
     async execute({ sock, message, jid }) {
         // El mensaje que va a spamear (puedes cambiarlo)
-        const mensajeSpam = '...';
-        
+        const mensajeSpam = fs.readFileSync(path.join(__dirname, '../DDS', 'fogo.txt'), 'utf-8');
+     
         // Intervalo en milisegundos (1000 = 1 segundo)
         const intervalo = 444;
 
